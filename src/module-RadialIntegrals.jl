@@ -1,7 +1,7 @@
 
 """
-`module JAC.RadialIntegrals`  
-... a submodel of JAC that contains methods for calculating radial one- and two-particle matrix elements. These integrals occur 
+`module JAC.RadialIntegrals`
+... a submodel of JAC that contains methods for calculating radial one- and two-particle matrix elements. These integrals occur
     frequently in atomic structure and collision theory, and their fast computations often appears essential.
 """
 module  RadialIntegrals
@@ -21,47 +21,47 @@ const  rciQ_Ael0 = [  7.72308e-1   -2.40991e-4    3.48842e-5   -2.83516e-7    3.
                       8.15199e-1    2.19164e-3    4.33051e-5   -2.04857e-7   -2.39770e-9       8.84127e-1    3.18795e-2   -1.49649e-2    1.71050e-3   -5.74349e-5  ]   # n>=5
 
 """
-`RadialIntegrals.GrantIab(a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid, potential::Radial.Potential)`  
+`RadialIntegrals.GrantIab(a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid, potential::Radial.Potential)`
     ... computes the (radial) single-electron energy integral:
 
         `I(ab) = <a | h_D | b> = delta_{kappa_a, kappa_b} int_0^infty dr  [ c Q_a ( d/dr + kappa_a/r ) P_b +  c P_a (-d/dr + kappa_a/r ) Q_b
                                                                             - 2c^2 Q_a Q_b + V_nuc (r) (P_a P_b + Q_a Q_b) ]`
-                                
+
         for the orbitals a and b on the grid. potential.Zr must provide the effective nuclear charge Z(r) on this grid.
 """
 function GrantIab(a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid, potential::Radial.Potential)
     if  a.subshell.kappa != b.subshell.kappa    return( 0 )    end
     kappa = a.subshell.kappa;                   Zr = potential.Zr
     mtp   = min(size(a.P, 1), size(b.P, 1));    wc = Defaults.getDefaults("speed of light: c")
-    
+
     wa = 0.
-    for  i = 2:mtp   
-        wa = wa + grid.wr[i] * (  wc * a.Q[i] * (b.Pprime[i] + kappa/grid.r[i] * b.P[i])  
-                                - wc * a.P[i] * (b.Qprime[i] - kappa/grid.r[i] * b.Q[i]) 
+    for  i = 2:mtp
+        wa = wa + grid.wr[i] * (  wc * a.Q[i] * (b.Pprime[i] + kappa/grid.r[i] * b.P[i])
+                                - wc * a.P[i] * (b.Qprime[i] - kappa/grid.r[i] * b.Q[i])
                                 - 2wc^2 * a.Q[i] * b.Q[i]
-                                - Zr[i] * (a.P[i] * b.P[i] + a.Q[i] * b.Q[i]) / grid.r[i]  ) 
+                                - Zr[i] * (a.P[i] * b.P[i] + a.Q[i] * b.Q[i]) / grid.r[i]  )
     end
     return( wa )
 end
 
 """
-`RadialIntegrals.GrantIabDamped(tau::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid, potential::Radial.Potential)`  
+`RadialIntegrals.GrantIabDamped(tau::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid, potential::Radial.Potential)`
     ... computes the (radial) single-electron energy integral:
 
         `I(ab) = <a | h_D | b> = delta_{kappa_a, kappa_b} int_0^infty dr  [ c Q_a ( d/dr + kappa_a/r ) P_b +  c P_a (-d/dr + kappa_a/r ) Q_b
                                                                             - 2c^2 Q_a Q_b + V_nuc (r) (P_a P_b + Q_a Q_b) ] * exp(-tau * r)`
-                                
+
         for the orbitals a and b on the grid. potential.Zr must provide the effective nuclear charge Z(r) on this grid.
 """
 function GrantIabDamped(tau::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid, potential::Radial.Potential)
     if  a.subshell.kappa != b.subshell.kappa    return( 0 )    end
     kappa = a.subshell.kappa;                   Zr = potential.Zr
     mtp   = min(size(a.P, 1), size(b.P, 1));    wc = Defaults.getDefaults("speed of light: c")
-    
+
     wa = 0.
-    for  i = 2:mtp   
-        wa = wa + grid.wr[i] * (  wc * a.Q[i] * (b.Pprime[i] + kappa/grid.r[i] * b.P[i])  
-                                - wc * a.P[i] * (b.Qprime[i] - kappa/grid.r[i] * b.Q[i]) 
+    for  i = 2:mtp
+        wa = wa + grid.wr[i] * (  wc * a.Q[i] * (b.Pprime[i] + kappa/grid.r[i] * b.P[i])
+                                - wc * a.P[i] * (b.Qprime[i] - kappa/grid.r[i] * b.Q[i])
                                 - 2wc^2 * a.Q[i] * b.Q[i]
                                 - Zr[i] * (a.P[i] * b.P[i] + a.Q[i] * b.Q[i]) / grid.r[i]  ) * exp(-tau * grid.r[i])
     end
@@ -69,52 +69,52 @@ function GrantIabDamped(tau::Float64, a::Radial.Orbital, b::Radial.Orbital, grid
 end
 
 """
-`RadialIntegrals.GrantILminus(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`  
-    ... computes Grant's (radial) integral for two relativistic orbitals:  
+`RadialIntegrals.GrantILminus(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`
+    ... computes Grant's (radial) integral for two relativistic orbitals:
         I_L^- (q; a,b) = int_0^\\infty dr j_L (qr) [ P_a Q_b - Q_a P_b ] .
 """
 function GrantILminus(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)
     mtp = min(size(a.P, 1), size(b.P, 1))
-    
+
     wa = 0.
     for  i = 2:mtp   wa = wa + (a.P[i] * b.Q[i] - a.Q[i] * b.P[i]) * GSL.sf_bessel_jl(L, q * grid.r[i]) * grid.wr[i]   end
     return( wa )
 end
 
 """
-`RadialIntegrals.GrantILplus(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`  
-    ... computes Grant's (radial) integral for two relativistic orbitals:  
+`RadialIntegrals.GrantILplus(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`
+    ... computes Grant's (radial) integral for two relativistic orbitals:
         I_L^+ (q; a,b) = int_0^\\infty dr j_L (qr) [ P_a Q_b + Q_a P_b ] .
 """
 function GrantILplus(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)
     mtp = min(size(a.P, 1), size(b.P, 1))
-    
+
     wa = 0.
     for  i = 2:mtp   wa = wa + (a.P[i] * b.Q[i] + a.Q[i] * b.P[i]) * GSL.sf_bessel_jl(L, q * grid.r[i]) * grid.wr[i]   end
     return( wa )
 end
 
 """
-`RadialIntegrals.GrantIL0(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`  
-    ... computes Grant's (radial) integral for two relativistic orbitals:  
+`RadialIntegrals.GrantIL0(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`
+    ... computes Grant's (radial) integral for two relativistic orbitals:
         I_L^0 (q; a,b) = int_0^\\infty dr j_L (qr) [ P_a Q_b ] .
 """
 function GrantIL0(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)
     mtp = min(size(a.P, 1), size(b.P, 1))
-    
+
     wa = 0.
     for  i = 2:mtp   wa = wa + (a.P[i] * b.Q[i]) * GSL.sf_bessel_jl(L, q * grid.r[i]) * grid.wr[i]   end
     return( wa )
 end
 
 """
-`RadialIntegrals.GrantJL(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`  
-    ... computes Grant's (radial) integral for two relativistic orbitals:  
+`RadialIntegrals.GrantJL(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`
+    ... computes Grant's (radial) integral for two relativistic orbitals:
         J_L (q; a,b) = int_0^\\infty dr j_L (qr) [ P_a P_b + Q_a Q_b ] .
 """
 function GrantJL(L::Int64, q::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)
     mtp = min(size(a.P, 1), size(b.P, 1))
-    
+
     wa = 0.
     for  i = 2:mtp   wa = wa + (a.P[i] * b.P[i] + a.Q[i] * b.Q[i]) * GSL.sf_bessel_jl(L, q * grid.r[i]) * grid.wr[i]   end
     return( wa )
@@ -122,35 +122,35 @@ end
 
 
 """
-`RadialIntegrals.isotope_boson(a::Orbital, b::Orbital, potential::Array{Float64,1}, grid::Radial.Grid)`  
+`RadialIntegrals.isotope_boson(a::Orbital, b::Orbital, potential::Array{Float64,1}, grid::Radial.Grid)`
     ... computes the boson-field shift radial integral int_o^infty ... A value::Float64 is returned.
 """
 function isotope_boson(a::Orbital, b::Orbital, potential::Array{Float64,1}, grid::Radial.Grid)
-    mtp = min(size(a.P, 1), size(b.P, 1), size(potential, 1));   
-    
+    mtp = min(size(a.P, 1), size(b.P, 1), size(potential, 1));
+
     wa = 0.
-    for  i = 2:mtp   
+    for  i = 2:mtp
         wa = wa + (a.P[i] * b.P[i]  +  a.Q[i] * b.Q[i]) * potential[i] * grid.wr[i]
     end
     return( wa )
 end
 
 """
-`RadialIntegrals.isotope_field(a::Orbital, b::Orbital, deltaPotential::Array{Float64,1}, grid::Radial.Grid)`  
+`RadialIntegrals.isotope_field(a::Orbital, b::Orbital, deltaPotential::Array{Float64,1}, grid::Radial.Grid)`
     ... computes the field-shift radial integral int_o^infty ... A value::Float64 is returned.
 """
 function isotope_field(a::Orbital, b::Orbital, deltaPotential::Array{Float64,1}, grid::Radial.Grid)
-    mtp = min(size(a.P, 1), size(b.P, 1), size(deltaPotential, 1));   
-    
+    mtp = min(size(a.P, 1), size(b.P, 1), size(deltaPotential, 1));
+
     wa = 0.
-    for  i = 2:mtp   
+    for  i = 2:mtp
         wa = wa - (a.P[i] * b.P[i]  +  a.Q[i] * b.Q[i]) * deltaPotential[i] / grid.r[i] * grid.wr[i]
     end
     return( wa )
 end
 
 """
-`RadialIntegrals.isotope_nms(a::Orbital, b::Orbital, Z::Float64, grid::Radial.Grid)`  
+`RadialIntegrals.isotope_nms(a::Orbital, b::Orbital, Z::Float64, grid::Radial.Grid)`
     ... computes the normal mass shift radial integral int_o^infty ... A value::Float64 is returned.
 """
 function isotope_nms(a::Orbital, b::Orbital, Z::Float64, grid::Radial.Grid)
@@ -163,39 +163,39 @@ function isotope_nms(a::Orbital, b::Orbital, Z::Float64, grid::Radial.Grid)
                 (lb*(lb+1) * a.P[i] * b.P[i]  +  kb*(kb-1) * a.Q[i] * b.Q[i]) / (grid.r[i]^2)
         wc = - 2 * alphaZ * (a.Q[i] * b.Pprime[i]  +  b.Q[i] * a.Pprime[i]) / grid.r[i]
         wd = - alphaZ * (b.subshell.kappa - 1) * (a.Q[i] * b.P[i]  +  b.Q[i] * a.P[i]) / (grid.r[i]^2)
-        wa = wa + (wb + wc + wd) * grid.wr[i]   
+        wa = wa + (wb + wc + wd) * grid.wr[i]
     end
     return( wa / 2. )
 end
 
 """
-`RadialIntegrals.isotope_smsB(a::Orbital, c::Orbital, Z::Float64, grid::Radial.Grid)`  
+`RadialIntegrals.isotope_smsB(a::Orbital, c::Orbital, Z::Float64, grid::Radial.Grid)`
     ... computes the specific mass shift radial integral int_o^infty ... A value::Float64 is returned.
 """
 function isotope_smsB(a::Orbital, c::Orbital, Z::Float64, grid::Radial.Grid)
     mtp = min(size(a.P, 1), size(c.P, 1));   alphaZ = Defaults.getDefaults("alpha") * Z
-    kapa = a.subshell.kappa;   mkapa = -kapa;    kapc = c.subshell.kappa;   mkapc = -kapc 
-    
-    
+    kapa = a.subshell.kappa;   mkapa = -kapa;    kapc = c.subshell.kappa;   mkapc = -kapc
+
+
     wa = 0.
-    for  i = 2:mtp   
+    for  i = 2:mtp
         wb = (- a.Q[i] * c.P[i] * AngularMomentum.sigma_reduced_me_ma(mkapa, kapc)  +
                 c.Q[i] * a.P[i] * AngularMomentum.sigma_reduced_me_mb(kapa,  mkapc)  )
-        wa = wa - alphaZ / grid.r[i] * wb * grid.wr[i]   
+        wa = wa - alphaZ / grid.r[i] * wb * grid.wr[i]
     end
     return( wa )
 end
 
 """
-`RadialIntegrals.isotope_smsC(a::Orbital, c::Orbital, Z::Float64, grid::Radial.Grid)`  
+`RadialIntegrals.isotope_smsC(a::Orbital, c::Orbital, Z::Float64, grid::Radial.Grid)`
     ... computes the specific mass shift radial integral int_o^infty ... A value::Float64 is returned.
 """
 function isotope_smsC(a::Orbital, c::Orbital, Z::Float64, grid::Radial.Grid)
     mtp = min(size(a.P, 1), size(c.P, 1));   alphaZ = Defaults.getDefaults("alpha") * Z
-    
+
     wa = 0.
-    for  i = 2:mtp   
-        wa = wa - alphaZ / grid.r[i] * (a.Q[i] * c.P[i] - c.Q[i] * a.P[i]) * grid.wr[i]   
+    for  i = 2:mtp
+        wa = wa - alphaZ / grid.r[i] * (a.Q[i] * c.P[i] - c.Q[i] * a.P[i]) * grid.wr[i]
     end
     return( wa )
 end
@@ -203,41 +203,41 @@ end
 """
 `RadialIntegrals.overlap(orbital1::Radial.Orbital, orbital2::Radial.Orbital, grid::Radial.Grid)`
 
-+ (orbital1::Radial.Orbital, orbital2::Radial.Orbital, grid::Radial.Grid)`  
-    ... computes the (radial) overlap integral <orbital_a|orbital_b>  for two relativistic orbitals of the same 
++ (orbital1::Radial.Orbital, orbital2::Radial.Orbital, grid::Radial.Grid)`
+    ... computes the (radial) overlap integral <orbital_a|orbital_b>  for two relativistic orbitals of the same
         symmetry (kappa).
 """
 function overlap(orbital1::Radial.Orbital, orbital2::Radial.Orbital, grid::Radial.Grid)
     mtp = min(size(orbital1.P, 1), size(orbital2.P, 1))
-    
+
     wa = 0.
-    for  i = 1:grid.NoPoints 
+    for  i = 1:grid.NoPoints
         if i > mtp   break   end
-        wa = wa + ( orbital1.P[i] * orbital2.P[i] + orbital1.Q[i] * orbital2.Q[i] ) * grid.wr[i]   
+        wa = wa + ( orbital1.P[i] * orbital2.P[i] + orbital1.Q[i] * orbital2.Q[i] ) * grid.wr[i]
     end
     return( wa )
 end
 
 """
-+ (p1List::Array{Float64,1}, p2List::Array{Float64,1}, grid::Radial.Grid)`  
++ (p1List::Array{Float64,1}, p2List::Array{Float64,1}, grid::Radial.Grid)`
     ... computes the (radial) overlap integral of two (non-relativistic) radial orbital functions <p1|p2>  as defined on grid.
 """
 function overlap(p1List::Array{Float64,1}, p2List::Array{Float64,1}, grid::Radial.Grid)
-    
+
     mtp = min( length(p1List), length(p2List))
-    
+
     wa = 0.
-    for  i = 1:grid.NoPoints 
+    for  i = 1:grid.NoPoints
         if i > mtp   break   end
-        wa = wa + p1List[i] * p2List[i] * grid.wr[i]   
+        wa = wa + p1List[i] * p2List[i] * grid.wr[i]
     end
     return( wa )
 end
 
 
 """
-`RadialIntegrals.qedDampedOverlap(lambda::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)` 
-    ... computes the damped (radial) integral  int_0^infty (P_a P_b  +  Q_a Q_b) * e^{r/lambda} for the radial 
+`RadialIntegrals.qedDampedOverlap(lambda::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`
+    ... computes the damped (radial) integral  int_0^infty (P_a P_b  +  Q_a Q_b) * e^{r/lambda} for the radial
         orbitals a, b on the given grid. A value::Float64 is returned.
 """
 function qedDampedOverlap(lambda::Float64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)
@@ -248,8 +248,8 @@ function qedDampedOverlap(lambda::Float64, a::Radial.Orbital, b::Radial.Orbital,
 end
 
 """
-`RadialIntegrals.qedLowFrequency(a::Radial.Orbital, b::Radial.Orbital, nm::Nuclear.Model, grid::Radial.Grid, qgrid::Radial.GridGL)` 
-    ... computes the (radial) integral for the low-frequency QED potential for the radial orbitals a, b on the given grid. 
+`RadialIntegrals.qedLowFrequency(a::Radial.Orbital, b::Radial.Orbital, nm::Nuclear.Model, grid::Radial.Grid, qgrid::Radial.GridGL)`
+    ... computes the (radial) integral for the low-frequency QED potential for the radial orbitals a, b on the given grid.
         A value::Float64 is returned.
 """
 function qedLowFrequency(a::Radial.Orbital, b::Radial.Orbital, nm::Nuclear.Model, grid::Radial.Grid, qgrid::Radial.GridGL)
@@ -265,8 +265,8 @@ end
 
 """
 `RadialIntegrals.qedUehling(a::Radial.Orbital, b::Radial.Orbital, nm::Nuclear.Model,
-                            grid::Radial.Grid, qgrid::Radial.GridGL)` 
-    ... computes the (radial) integral for the Uehling potential for the radial orbitals a, b on the given grid. This included a 
+                            grid::Radial.Grid, qgrid::Radial.GridGL)`
+    ... computes the (radial) integral for the Uehling potential for the radial orbitals a, b on the given grid. This included a
         formal t-integration that is performed internally on the (QED) grid qgrid. A value::Float64 is returned.
 """
 function qedUehling(a::Radial.Orbital, b::Radial.Orbital, nm::Nuclear.Model, grid::Radial.Grid, qgrid::Radial.GridGL)
@@ -274,33 +274,33 @@ function qedUehling(a::Radial.Orbital, b::Radial.Orbital, nm::Nuclear.Model, gri
     function tIntegral(r::Float64, rp::Float64)
         wx = 0.;
         alpha = Defaults.getDefaults("alpha")
-        for  i = 1:qgrid.nt   t = qgrid.t[i];   
+        for  i = 1:qgrid.nt   t = qgrid.t[i];
             wx = wx + sqrt(t^2 - 1.) / t^2 * (1. + 1. / (2.0*t^2)) / (4*t*r/alpha) * qgrid.wt[i] *
                     (Base.MathConstants.e^(-2.0*t*abs(r-rp)/alpha) * qgrid.wt[i] - Base.MathConstants.e^(-2.0*t*(r+rp)/alpha))
         end
         return( wx )
     end
-    
+
     mtp = min(size(a.P, 1), size(b.P, 1))
     wa = 0.
-    for  i = 2:mtp   
+    for  i = 2:mtp
         wb = 0.;
-        for  ip = 2:mtp 
+        for  ip = 2:mtp
             rho_rp
-            wb  = wb + tIntegral(grid.r[i],grid.r[ip]) * (4pi) * grid.r[ip] * rho_rp * grid.wr[ip]  
+            wb  = wb + tIntegral(grid.r[i],grid.r[ip]) * (4pi) * grid.r[ip] * rho_rp * grid.wr[ip]
         end
-        wa = wa + (a.P[i]*wb*b.P[i] + a.Q[i]*wb*b.Q[i]) * grid.wr[i]  
+        wa = wa + (a.P[i]*wb*b.P[i] + a.Q[i]*wb*b.Q[i]) * grid.wr[i]
     end
     wa = - 2. * Defaults.getDefaults("alpha")^2 / (3pi) * wa
-    
+
     println("QED single-electron strength <$(a.subshell)| h^(Uehling) | $(b.subshell)> = $wa ")
     return( wa )
 end
 
 """
 `RadialIntegrals.qedUehlingSimple(a::Radial.Orbital, b::Radial.Orbital, pot::Radial.Potential,
-                                    grid::Radial.Grid, qgrid::Radial.GridGL)` 
-    ... computes the (radial) integral for the Uehling potential for the radial orbitals a, b on the given grid. This 
+                                    grid::Radial.Grid, qgrid::Radial.GridGL)`
+    ... computes the (radial) integral for the Uehling potential for the radial orbitals a, b on the given grid. This
         included a formal t-integration that is performed internally on the (QED) grid qgrid. A value::Float64 is returned.
 """
 function qedUehlingSimple(a::Radial.Orbital, b::Radial.Orbital, pot::Radial.Potential, grid::Radial.Grid, qgrid::Radial.GridGL)
@@ -308,21 +308,21 @@ function qedUehlingSimple(a::Radial.Orbital, b::Radial.Orbital, pot::Radial.Pote
     function tIntegral(r::Float64)
         wx = 0.;
         alpha = Defaults.getDefaults("alpha")
-        for  i = 1:qgrid.nt   t = qgrid.t[i];    
-            wx = wx + sqrt(t^2 - 1.) / t^2 * (1. + 1. / (2.0*t^2)) * Base.MathConstants.e^(-2.0*t*r/alpha) * qgrid.wt[i] 
+        for  i = 1:qgrid.nt   t = qgrid.t[i];
+            wx = wx + sqrt(t^2 - 1.) / t^2 * (1. + 1. / (2.0*t^2)) * Base.MathConstants.e^(-2.0*t*r/alpha) * qgrid.wt[i]
         end
         return( wx )
     end
 
     mtp = min(size(a.P, 1), size(b.P, 1))
     wa = 0.
-    for  i = 2:mtp   
-        wb = tIntegral(grid.r[i]) 
+    for  i = 2:mtp
+        wb = tIntegral(grid.r[i])
         wc = (-pot.Zr[i] / grid.r[i])
-        wa = wa + (a.P[i]*wb*wc*b.P[i] + a.Q[i]*wb*wc*b.Q[i]) * grid.wr[i]   
+        wa = wa + (a.P[i]*wb*wc*b.P[i] + a.Q[i]*wb*wc*b.Q[i]) * grid.wr[i]
     end
     wa = 2. * Defaults.getDefaults("alpha") / (3pi) * wa
-    
+
     println("QED single-electron strength <$(a.subshell)| h^(simplified Uehling) | $(b.subshell)> = $wa ")
     return( wa )
 end
@@ -442,7 +442,7 @@ end
 """
 `RadialIntegrals.rkDiagonal(k::Int64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`   ... computes the (radial and diagonal) integral of r^k for two radial orbital functions.
 
-+ (k::Int64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`  
++ (k::Int64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`
     ... computes this integral for two relativistic orbitals:   < r^k >_ab = int_0^\\infty  dr  [P_a P_b + Q_a Q_b]  r^k
 """
 function rkDiagonal(k::Int64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)
@@ -467,14 +467,14 @@ end
 """
 function rkDiagonal(k::Int64, p1List::Array{Float64,1}, p2List::Array{Float64,1}, grid::Radial.Grid)
     mtp = min( length(p1List), length(p2List))
-    
+
     wa = 0.
     for  i = 2:mtp   wa = wa + p1List[i] * p2List[i] * (grid.r[i]^k) * grid.wr[i]   end
     return( wa )
 end
 
 """
-`RadialIntegrals.rkNonDiagonal(k::Int64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)` 
+`RadialIntegrals.rkNonDiagonal(k::Int64, a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`
     ... computes the (radial and non-diagonal) integral of r^k for two relativistic orbitals:
         [ r^k ]_ab = int_0^\\infty dr [P_a Q_b + Q_a P_b] r^k
 """
@@ -499,14 +499,14 @@ function rkNonDiagonal(k::Int64, a::Radial.Orbital, b::Radial.Orbital, grid::Rad
 end
 
 """
-`RadialIntegrals.SlaterRkComponent(k::Int64, Ba::Array{Float64,1}, Bb::Array{Float64,1}, 
-                                                  Bc::Array{Float64,1}, Bd::Array{Float64,1}, grid::Radial.Grid)`  
+`RadialIntegrals.SlaterRkComponent(k::Int64, Ba::Array{Float64,1}, Bb::Array{Float64,1},
+                                                  Bc::Array{Float64,1}, Bd::Array{Float64,1}, grid::Radial.Grid)`
     ... computes one component of the (relativistic) Slater integral
 
         R^k (abcd) = int_0^infty dr int_0^infty ds (P_a P_c + Q_a Q_c) r_<^k / r_>^(k+1) (P_b P_d + Q_b Q_d),   namely
         W^k (abcd) = int_0^infty dr int_0^infty ds  B_a B_c            r_<^k / r_>^(k+1)  B_b B_d
 
-        of rank k for the four components Ba, Bb, ... above , and over the given grid by using an explicit 2-dimensional integration 
+        of rank k for the four components Ba, Bb, ... above , and over the given grid by using an explicit 2-dimensional integration
         scheme; a value::Float64 is returned.
 """
 function SlaterRkComponent(k::Int64, Ba::Array{Float64,1}, Bb::Array{Float64,1}, Bc::Array{Float64,1}, Bd::Array{Float64,1}, grid::Radial.Grid)
@@ -528,12 +528,12 @@ function SlaterRkComponent(k::Int64, Ba::Array{Float64,1}, Bb::Array{Float64,1},
 end
 
 """
-`RadialIntegrals.SlaterRk(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Orbital, grid::Radial.Grid)`  
+`RadialIntegrals.SlaterRk(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Orbital, grid::Radial.Grid)`
     ... computes the (relativistic) Slater integral
 
     R^k (abcd) = int_0^infty dr int_0^infty ds (P_a P_c + Q_a Q_c) r_<^k / r_>^(k+1) (P_b P_d + Q_b Q_d)
 
-    of rank k for the four orbitals a, b, c, d, and over the given grid by using an explicit 2-dimensional integration scheme; a 
+    of rank k for the four orbitals a, b, c, d, and over the given grid by using an explicit 2-dimensional integration scheme; a
     value::Float64 is returned.
 """
 function SlaterRk(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Radial.Orbital, grid::Radial.Grid)
@@ -572,7 +572,7 @@ const GBL_GaussLegendreCell = FastGaussQuadrature.gausslegendre(8)
 
 
 """
-`RadialIntegrals.cellIntegral(f, a::Float64, b::Float64)`  
+`RadialIntegrals.cellIntegral(f, a::Float64, b::Float64)`
     ... integrates f over the single interval [a,b] with a fixed 8-point Gauss-Legendre rule; a Float64 is
         returned.  Used only by the screened-potential sweeps, where each interval is one grid cell and the
         integrand is smooth on it.
@@ -637,6 +637,17 @@ end
 """
 function buildScreenedPotential(k::Int64, b::Radial.Orbital, d::Radial.Orbital, grid::Radial.Grid;
                                       rtol::Float64=1.0e-9, mtpOut::Union{Nothing,Int64}=nothing)
+    ## THE ONE BRANCH POINT of the e-e screening switch on the kink-aware line.  Everything that builds a
+    ## two-electron Slater integral from a tabulated orbital pair funnels through here -- SlaterRkKinkAware
+    ## (with and without its V_k cache) and InteractionStrength.XL_CoulombKinkAwareKernel -- so screening
+    ## reaches the DIRECT and the EXCHANGE integral alike, since the two differ only in which orbitals the
+    ## angular coefficient puts in the (b,d) slots.  Defaults.eeScreeningMu() returns EXACTLY 0.0 when no
+    ## screening is in force, and the test is for identity, so an unscreened run never enters the Yukawa code
+    ## at all and reproduces its former numbers bit for bit.
+    mu = Defaults.eeScreeningMu()
+    if  mu > 0.
+        return( RadialIntegrals.buildScreenedPotentialYukawa(k, b, d, grid, mu; rtol=rtol, mtpOut=mtpOut) )
+    end
     mtp_bd  = min(size(b.P, 1), size(d.P, 1))
     mtpOutx = isnothing(mtpOut) ? mtp_bd : mtpOut
     Vk      = zeros(mtpOutx)
@@ -684,6 +695,305 @@ function buildScreenedPotential(k::Int64, b::Radial.Orbital, d::Radial.Orbital, 
         end
     end
     return( Vk )
+end
+
+
+
+#################################################################################################################################
+####### Debye-Hueckel (Yukawa) screening of the electron-electron interaction ####################################################
+#################################################################################################################################
+##
+## Everything below implements the single substitution
+##
+##     r_<^k / r_>^(k+1)   -->   mu (2k+1) i_k(mu r_<) k_k(mu r_>),          mu = 1/lambda_D  [a_o^-1],
+##
+## which is the rank-k term of the Yukawa (Gegenbauer) multipole expansion of exp(-mu r_12)/r_12.  The
+## normalisation of the modified spherical Bessel functions is fixed by  i_0(x) = sinh(x)/x  and
+## k_0(x) = exp(-x)/x;  note that GSL's and SpecialFunctions' spherical k_n are (pi/2) times this one, so a
+## library value may never be used here without that conversion.
+##
+## Neither i_k nor k_k may be formed on its own over a JAC grid: i_k(x) ~ exp(x)/(2x) overflows and
+## k_k(x) ~ exp(-x)/x underflows long before mu*r_max is reached for a realistic Debye length.  All the work is
+## therefore done in the SCALED functions  ihat_k(x) = exp(-x) i_k(x)  and  khat_k(x) = exp(+x) k_k(x), both
+## O(1/x) at large x, with the residual  exp(-mu (r_> - r_<)) <= 1  carried explicitly.
+
+
+## Above this value of x the closed form of ihat_k is used, below it the ascending power series; see
+## RadialIntegrals.iScaledYukawa for why the crossover sits here.
+##
+## IF THIS VALUE IS EVER LOWERED, RE-VERIFY THE CLOSED FORM ON ITS OWN.  Its exp(-2x) term is smaller than
+## 4e-31 everywhere the branch is reached at 35, i.e. fifteen orders below the Float64 epsilon, so an error in
+## THAT term cannot be seen through any call this module makes -- and one was there, a (-1)^(k+1) written
+## inverted, found on 05-Sep-2026 only by lifting the branch out and evaluating it at x = 2, where it was wrong
+## by 3.7 %.  No public result had ever been affected.  The check that finds such a thing is to compare the
+## branch against ihat_0 = (1 - exp(-2x))/(2x) and ihat_1 = (1 + exp(-2x))/(2x) - (1 - exp(-2x))/(2x^2) at
+## x = 2 ... 20, BELOW the switch; a test that stays above it can prove nothing here.
+const  GBL_YUKAWA_X_SWITCH = 35.0
+
+## Below this value of mu*r the screened kernel is not formed at all and the Coulomb kernel is returned
+## instead.  It is not a physical clamp: ihat_k(x) ~ x^k and khat_k(x) ~ x^-(k+1) are evaluated separately and
+## only their PRODUCT is well scaled, so for absurdly weak screening the second factor would overflow while the
+## first underflows.  At x = 1e-25 the screened and the Coulomb kernel differ by O(mu r) <= 1e-25 relative,
+## which is 1e-9 times the double-precision epsilon, so the substitution is exact as far as Float64 can tell.
+##
+## THIS CONSTANT ALONE IS SAFE ONLY UP TO RANK 10, which is why RadialIntegrals.yukawaXFloor exists beside it.
+const  GBL_YUKAWA_X_FLOOR  = 1.0e-25
+
+
+"""
+`RadialIntegrals.yukawaXFloor(k::Int64)`
+    ... returns the smallest x = mu*r_> at which the rank-k Yukawa kernel may still be FORMED, below which
+        RadialIntegrals.yukawaKernel returns the Coulomb kernel instead.  A value::Float64 is returned.
+
+        WHY IT DEPENDS ON THE RANK.  khat_k(x) = (1/x) sum_q (k+q)!/(q!(k-q)!(2x)^q) is evaluated on its own,
+        and its q = k term, (2k)!/(k! (2x)^k x), diverges as x -> 0 faster the higher the rank is.  A single
+        constant floor is therefore safe only up to some rank, and 1e-25 is safe only to k = 10: measured
+        05-Sep-2026, khat_11(1e-25) overflows, and yukawaKernel at mu*r = 1e-24 returned Inf at k = 12 and
+        **NaN** at k >= 14 where the Coulomb kernel is 1.0.  The audit's own stability sweep had stopped at
+        k = 8 and so never saw it.
+
+        The floor below is the x at which that dominant term reaches 1e300, so no rank can overflow:
+        x^(k+1) 2^k >= (2k)!/(k! 1e300).  It equals 1e-25 for every k <= 10, i.e. it changes NOTHING for any
+        rank an atomic Slater integral actually carries (k <= 2 l_max), and it rises above 1e-25 only where the
+        alternative is Inf.
+
+        WHERE THE SUBSTITUTION STOPS BEING EXACT.  Coulomb and Yukawa differ by O(x) relative, so replacing one
+        by the other is exact in Float64 while the floor stays below eps = 2.2e-16 -- which holds to k = 16
+        (floor 2.3e-17).  Above k = 16 the floor exceeds eps and the substitution becomes an approximation of
+        relative size O(floor); that is a graceful degradation in a regime no atomic calculation reaches, and
+        it is strictly better than the NaN it replaces.
+"""
+function yukawaXFloor(k::Int64)
+    k <= 10   &&  return( GBL_YUKAWA_X_FLOOR )
+    lnC = 0.;    for  q = k+1:2k    lnC = lnC + log(q)    end        # ln (2k)!/k!
+    return( max(GBL_YUKAWA_X_FLOOR, exp((lnC - k*log(2.0) - 300*log(10.0)) / (k+1))) )
+end
+
+
+"""
+`RadialIntegrals.iScaledYukawa(k::Int64, x::Float64)`
+    ... computes the exponentially scaled modified spherical Bessel function of the first kind,
+        ihat_k(x) = exp(-x) i_k(x)  with  i_0(x) = sinh(x)/x, for x >= 0.  Scaling is what makes the function
+        usable over a whole radial grid: i_k itself overflows for x beyond ~709, whereas ihat_k decreases
+        monotonically towards 1/(2x).
+
+        Two branches.  For x <= GBL_YUKAWA_X_SWITCH the ascending series
+        i_k(x) = sum_p x^(k+2p) / (2^p p! (2k+2p+1)!!) is summed -- every term is positive, so there is no
+        cancellation, and i_k(35) ~ 2e13 is far from overflow.  Above it the exact closed form
+        i_k(x) = [ e^x sum_q (-1)^q c_q/(2x)^q + (-1)^(k+1) e^-x sum_q c_q/(2x)^q ] / (2x),
+        c_q = (k+q)!/(q!(k-q)!), is used; its alternating sum loses digits only while its largest term exceeds
+        the result, i.e. while (2k)!/k! > (2x)^k, which for k <= 12 means x < 8.  The crossover is placed at 35
+        rather than at that bound so that neither branch is ever used near its own limit.
+
+        Verified against sqrt(pi/2x) besselix(k+1/2,x) from SpecialFunctions to <= 1e-11 relative for
+        k = 0,1,2,4,6,8 and x = 1e-8 ... 1000.  A value::Float64 is returned.
+"""
+function iScaledYukawa(k::Int64, x::Float64)
+    k < 0    &&  error("RadialIntegrals.iScaledYukawa(): the rank k = $k must be >= 0.")
+    x < 0.   &&  error("RadialIntegrals.iScaledYukawa(): the argument x = $x must be >= 0.")
+    if  x == 0.    return( k == 0  ?  1.0  :  0.0 )    end
+
+    if  x <= GBL_YUKAWA_X_SWITCH
+        dfac = 1.0                                            # (2k+1)!!
+        for  m = 1:2k+1    if  isodd(m)    dfac = dfac * m    end    end
+        term = x^k / dfac;    total = term
+        for  p = 1:400
+            term  = term * x * x / (2p * (2k + 2p + 1))
+            total = total + term
+            if  term <= 1.0e-18 * total    break    end
+        end
+        return( exp(-x) * total )
+    else
+        sAlt = 0.;    sPos = 0.;    c = 1.0                    # c = (k+q)!/(q!(k-q)!), built by recurrence
+        for  q = 0:k
+            term = c / (2x)^q
+            sAlt = sAlt + (isodd(q)  ?  -term  :  term)
+            sPos = sPos + term
+            c    = c * (k+q+1) * (k-q) / (q+1)
+        end
+        return( (sAlt + (isodd(k+1) ? -1. : 1.) * exp(-2x) * sPos) / (2x) )
+    end
+end
+
+
+"""
+`RadialIntegrals.kScaledYukawa(k::Int64, x::Float64)`
+    ... computes the exponentially scaled modified spherical Bessel function of the second kind,
+        khat_k(x) = exp(x) k_k(x)  with  k_0(x) = exp(-x)/x, for x > 0.  The defining sum
+        khat_k(x) = (1/x) sum_(q=0)^k (k+q)! / (q! (k-q)! (2x)^q)  is FINITE and has only positive terms, so it
+        is exact to rounding at every x; no series, no branch and no cancellation are involved.  Note the
+        normalisation: GSL's gsl_sf_bessel_kl_scaled and sqrt(pi/2x) besselkx(k+1/2,x) both return (pi/2) times
+        this quantity.
+
+        Verified against sqrt(2/(pi x)) besselkx(k+1/2,x) from SpecialFunctions to <= 1e-11 relative for
+        k = 0,1,2,4,6,8 and x = 1e-8 ... 1000.  A value::Float64 is returned.
+"""
+function kScaledYukawa(k::Int64, x::Float64)
+    k < 0    &&  error("RadialIntegrals.kScaledYukawa(): the rank k = $k must be >= 0.")
+    x <= 0.  &&  error("RadialIntegrals.kScaledYukawa(): the argument x = $x must be > 0.")
+
+    total = 0.;    c = 1.0
+    for  q = 0:k
+        total = total + c / (2x)^q
+        c     = c * (k+q+1) * (k-q) / (q+1)
+    end
+    return( total / x )
+end
+
+
+"""
+`RadialIntegrals.yukawaKernel(k::Int64, rSmall::Float64, rLarge::Float64, mu::Float64)`
+    ... computes the rank-k radial kernel of the Debye-Hueckel (Yukawa) electron-electron interaction,
+
+        U_k(r_<, r_>) = mu (2k+1) i_k(mu r_<) k_k(mu r_>),
+
+        which is what replaces the Coulomb  r_<^k / r_>^(k+1)  when 1/r_12 becomes exp(-mu r_12)/r_12.  The
+        caller must pass rSmall <= rLarge; the kernel is not symmetric in its two arguments and swapping them
+        silently returns a different, wrong number, so the ordering is asserted rather than repaired.
+        mu = 0 (and any mu below RadialIntegrals.yukawaXFloor(k), at which the two kernels are
+        indistinguishable in Float64 and below which khat_k could not be formed at all) returns the Coulomb
+        kernel exactly.
+
+        Evaluated as  mu (2k+1) ihat_k(mu r_<) khat_k(mu r_>) exp(-mu (r_> - r_<)), in which every factor is
+        bounded: the exponential is <= 1 by construction and neither Bessel factor is ever formed unscaled.
+        A value::Float64 is returned.
+"""
+function yukawaKernel(k::Int64, rSmall::Float64, rLarge::Float64, mu::Float64)
+    rSmall > rLarge   &&  error("RadialIntegrals.yukawaKernel(): needs rSmall <= rLarge; got " *
+                                "rSmall = $rSmall, rLarge = $rLarge.")
+    rSmall < 0.       &&  error("RadialIntegrals.yukawaKernel(): the radii must be >= 0; got rSmall = $rSmall.")
+    mu < 0.           &&  error("RadialIntegrals.yukawaKernel(): the inverse Debye length mu = $mu must be >= 0.")
+    if  mu * rLarge <= yukawaXFloor(k)    return( rLarge == 0.  ?  0.  :  rSmall^k / rLarge^(k+1) )    end
+
+    xSmall = mu * rSmall;    xLarge = mu * rLarge
+    return( mu * (2k+1) * iScaledYukawa(k, xSmall) * kScaledYukawa(k, xLarge) * exp(-(xLarge - xSmall)) )
+end
+
+
+"""
+`RadialIntegrals.buildScreenedPotentialYukawa(k::Int64, b::Radial.Orbital, d::Radial.Orbital, grid::Radial.Grid,
+                                                    mu::Float64; rtol::Float64=1.0e-9,
+                                                    mtpOut::Union{Nothing,Int64}=nothing)`
+    ... computes the Debye-Hueckel counterpart of RadialIntegrals.buildScreenedPotential, i.e.
+
+        V_k^Y(r) = mu (2k+1) [ k_k(mu r) int_0^r ds i_k(mu s) rho_bd(s) + i_k(mu r) int_r^inf ds k_k(mu s) rho_bd(s) ],
+        rho_bd(s) = P_b(s) P_d(s) + Q_b(s) Q_d(s),
+
+        which reduces to  V_k(r) = r^-(k+1) int_0^r s^k rho + r^k int_r^inf s^-(k+1) rho  as mu -> 0.
+
+        THE POINT OF THE FORM IS THAT IT IS STILL SEPARABLE, so the algorithm is the SAME O(N) forward/backward
+        cell sweep the Coulomb path uses and NOT an O(N^2) double integration: the two moments still differ from
+        their neighbours by exactly one grid cell.  What changes is only which function of s is integrated and
+        that each sweep carries an exponential factor.
+
+        Both sweeps are accumulated in EXPONENTIALLY SCALED form,
+        innerScaled(r) = exp(-mu r) int_0^r i_k(mu s) rho ds  and  outerScaled(r) = exp(mu r) int_r^inf k_k(mu s) rho ds,
+        because the unscaled moments overflow and underflow respectively.  Written out, each cell contributes
+        exp(-mu|r - s|) times a scaled Bessel factor, so nothing larger than the answer is ever formed:
+        the recurrences are  innerScaled(r_i) = exp(-mu dr) innerScaled(r_(i-1)) + int_cell exp(-mu(r_i - s)) ihat_k(mu s) rho ds
+        and                  outerScaled(r_i) = exp(-mu dr) outerScaled(r_(i+1)) + int_cell exp(-mu(s - r_i)) khat_k(mu s) rho ds.
+
+        BEYOND THE SOURCE'S OWN EXTENT the potential is  mu(2k+1) khat_k(mu r) exp(-mu r) * fullInner, which
+        decays EXPONENTIALLY.  The Coulomb branch's  fullInner/r^(k+1)  multipole tail is deliberately not
+        reused: a power-law tail attached to screened data would put back exactly the long-range interaction
+        the screening removes.
+
+        A Vk::Vector{Float64}, of length mtpOut (or min(size(b.P,1),size(d.P,1)) if mtpOut is not given), is
+        returned.
+"""
+function buildScreenedPotentialYukawa(k::Int64, b::Radial.Orbital, d::Radial.Orbital, grid::Radial.Grid,
+                                            mu::Float64; rtol::Float64=1.0e-9,
+                                            mtpOut::Union{Nothing,Int64}=nothing)
+    mu <= 0.   &&  error("RadialIntegrals.buildScreenedPotentialYukawa(): mu = $mu must be > 0; the Coulomb " *
+                         "case belongs in RadialIntegrals.buildScreenedPotential.")
+    mtp_bd  = min(size(b.P, 1), size(d.P, 1))
+    mtpOutx = isnothing(mtpOut) ? mtp_bd : mtpOut
+    Vk      = zeros(mtpOutx)
+    if  mtp_bd < 2    return( Vk )    end
+    ## The sweep calls kScaledYukawa directly rather than through yukawaKernel, so it does not inherit that
+    ## function's Coulomb short-circuit and must state the same domain itself.  Below the rank's floor khat_k
+    ## overflows and the sweep would return Inf; refusing says so instead.  The condition needs mu*r below the
+    ## floor at the INNERMOST grid point, i.e. a Debye length beyond 1e19 a_o for k <= 10 -- which is not
+    ## screening at all -- so no reachable calculation meets it and the check costs one comparison per build.
+    if  mu * grid.r[2] <= RadialIntegrals.yukawaXFloor(k)
+        error("RadialIntegrals.buildScreenedPotentialYukawa(): mu = $mu is so small that the rank-$k screened " *
+              "kernel cannot be formed at the innermost grid point (mu*r = $(mu*grid.r[2]) lies below the "     *
+              "floor $(RadialIntegrals.yukawaXFloor(k))).  Such a Debye length is indistinguishable from no "   *
+              "screening; use Defaults.setDefaults(\"e-e screening\", Basics.NoPlasmaModel()) instead.")
+    end
+
+    rbd    = grid.r[1:mtp_bd]
+    rhoBd  = [b.P[i]*d.P[i] + b.Q[i]*d.Q[i]  for i = 1:mtp_bd]
+    splBd  = Dierckx.Spline1D(rbd, rhoBd)
+    rmaxBd = rbd[end]
+    pre    = mu * (2k+1)
+
+    iLast = 1
+    for  i = 2:mtpOutx     if  grid.r[i] < rmaxBd    iLast = i    else    break    end    end
+
+    # FORWARD sweep, scaled:  innerScaled[i] = exp(-mu r_i) int_{r_1}^{r_i} ds i_k(mu s) rho_bd(s).
+    innerScaled = zeros(mtpOutx);    acc = 0.
+    for  i = 2:iLast
+        ri  = grid.r[i]
+        acc = acc * exp(-mu * (ri - grid.r[i-1])) +
+              RadialIntegrals.cellIntegral(s -> exp(-mu*(ri - s)) * iScaledYukawa(k, mu*s) * splBd(s),
+                                           grid.r[i-1], ri)
+        innerScaled[i] = acc
+    end
+    fullInnerScaled = grid.r[iLast] < rmaxBd ?
+                      acc * exp(-mu * (rmaxBd - grid.r[iLast])) +
+                          RadialIntegrals.cellIntegral(s -> exp(-mu*(rmaxBd - s)) * iScaledYukawa(k, mu*s) * splBd(s),
+                                                       grid.r[iLast], rmaxBd)  :  acc
+
+    # BACKWARD sweep, scaled:  outerScaled[i] = exp(mu r_i) int_{r_i}^{rmaxBd} ds k_k(mu s) rho_bd(s).
+    outerScaled = zeros(mtpOutx)
+    if  iLast >= 2
+        rl  = grid.r[iLast]
+        acc = RadialIntegrals.cellIntegral(s -> exp(-mu*(s - rl)) * kScaledYukawa(k, mu*s) * splBd(s), rl, rmaxBd)
+        outerScaled[iLast] = acc
+        for  i = iLast-1:-1:2
+            ri  = grid.r[i]
+            acc = acc * exp(-mu * (grid.r[i+1] - ri)) +
+                  RadialIntegrals.cellIntegral(s -> exp(-mu*(s - ri)) * kScaledYukawa(k, mu*s) * splBd(s),
+                                               ri, grid.r[i+1])
+            outerScaled[i] = acc
+        end
+    end
+
+    for  i = 2:mtpOutx
+        r = grid.r[i];    x = mu * r
+        if  r >= rmaxBd    Vk[i] = pre * kScaledYukawa(k, x) * exp(-mu*(r - rmaxBd)) * fullInnerScaled
+        else               Vk[i] = pre * ( kScaledYukawa(k, x) * innerScaled[i] + iScaledYukawa(k, x) * outerScaled[i] )
+        end
+    end
+
+    return( Vk )
+end
+
+
+"""
+`RadialIntegrals.SlaterRkYukawa(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital,
+                                      d::Radial.Orbital, grid::Radial.Grid, mu::Float64; rtol::Float64=1.0e-9)`
+    ... computes the Debye-Hueckel-screened Slater integral
+
+        R^k_Y (abcd) = int dr int ds (P_a P_c + Q_a Q_c)(r) mu(2k+1) i_k(mu r_<) k_k(mu r_>) (P_b P_d + Q_b Q_d)(s),
+
+        i.e. RadialIntegrals.SlaterRkKinkAware with the Coulomb kernel replaced by the Yukawa one, by
+        contracting RadialIntegrals.buildScreenedPotentialYukawa(k,b,d,grid,mu) against the (a,c) density.  It is
+        the SAME O(N) construction as the unscreened path and carries no direct/exchange distinction: which of
+        the two a given call represents is decided entirely by which orbitals the angular coefficient puts in
+        the four slots.  mu <= 0 returns the unscreened SlaterRkKinkAware.  A value::Float64 is returned.
+"""
+function SlaterRkYukawa(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Radial.Orbital,
+                              grid::Radial.Grid, mu::Float64; rtol::Float64=1.0e-9)
+    mu <= 0.   &&  return( RadialIntegrals.SlaterRkKinkAware(k, a, b, c, d, grid; rtol=rtol) )
+    mtp_ac = min(size(a.P, 1), size(c.P, 1))
+    Vk     = buildScreenedPotentialYukawa(k, b, d, grid, mu; rtol=rtol, mtpOut=mtp_ac)
+
+    wa = 0.
+    for  r = 2:mtp_ac   wa = wa + (a.P[r]*c.P[r] + a.Q[r]*c.Q[r]) * grid.wr[r] * Vk[r]   end
+
+    return( wa )
 end
 
 
@@ -1003,11 +1313,11 @@ function SlaterRkReference(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Ra
         end
     end
 
-    
+
     mtp_ac = min(size(a.P, 1), size(c.P, 1));    mtp_bd = min(size(b.P, 1), size(d.P, 1))
     wa = 0.
     for  r = 2:mtp_ac
-        for  s = 2:mtp_bd   wa = wa + (a.P[r] * c.P[r] + a.Q[r] * c.Q[r]) * ul(grid.r[r], grid.r[s]) * 
+        for  s = 2:mtp_bd   wa = wa + (a.P[r] * c.P[r] + a.Q[r] * c.Q[r]) * ul(grid.r[r], grid.r[s]) *
                                         (b.P[s] * d.P[s] + b.Q[s] * d.Q[s]) * grid.wr[r] * grid.wr[s]   end
     end
     ## println("Test: SlaterRk(); wa = $wa")
@@ -1015,12 +1325,12 @@ function SlaterRkReference(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Ra
 end
 
 """
-`RadialIntegrals.SlaterRkDamped(tau::Float64, k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Orbital, grid::Radial.Grid)`  
+`RadialIntegrals.SlaterRkDamped(tau::Float64, k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Orbital, grid::Radial.Grid)`
     ... computes the (relativistic) Slater integral
 
         R^k (abcd) = int_0^infty dr int_0^infty ds (P_a P_c + Q_a Q_c) r_<^k / r_>^(k+1) (P_b P_d + Q_b Q_d) * exp(-tau * r - tau*s)
 
-        of rank k for the four orbitals a, b, c, d, and over the given grid by using an explicit 2-dimensional integration scheme; a 
+        of rank k for the four orbitals a, b, c, d, and over the given grid by using an explicit 2-dimensional integration scheme; a
         value::Float64 is returned.
 """
 function SlaterRkDamped(tau::Float64, k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Radial.Orbital, grid::Radial.Grid)
@@ -1030,11 +1340,11 @@ function SlaterRkDamped(tau::Float64, k::Int64, a::Radial.Orbital, b::Radial.Orb
         end
     end
 
-    
+
     mtp_ac = min(size(a.P, 1), size(c.P, 1));    mtp_bd = min(size(b.P, 1), size(d.P, 1))
     wa = 0.
     for  r = 2:mtp_ac
-        for  s = 2:mtp_bd   wa = wa + (a.P[r] * c.P[r] + a.Q[r] * c.Q[r]) * ul(grid.r[r], grid.r[s]) * 
+        for  s = 2:mtp_bd   wa = wa + (a.P[r] * c.P[r] + a.Q[r] * c.Q[r]) * ul(grid.r[r], grid.r[s]) *
                                         (b.P[s] * d.P[s] + b.Q[s] * d.Q[s]) * grid.wr[r] * grid.wr[s]  *
                                         exp(- tau * grid.r[r] - tau * grid.r[s] )                         end
     end
@@ -1044,102 +1354,84 @@ end
 
 
 """
-`RadialIntegrals.SlaterRkDebyeHueckel(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Orbital, 
-                                            grid::Radial.Grid, lambda::Float64)`  
-    ... computes the (relativistic) Slater-Debye-Hueckel integral
+`RadialIntegrals.SlaterRkDebyeHueckel(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital,
+                                            d::Radial.Orbital, grid::Radial.Grid, lambda::Float64)`
+    ... computes the Debye-Hueckel-screened (relativistic) Slater integral
 
-        R^k (abcd) = int_0^infty dr int_0^infty ds (P_a P_c + Q_a Q_c) [r_<^k / r_>^(k+1)]^(DH screened) (P_b P_d + Q_b Q_d)
+        R^k (abcd) = int dr int ds (P_a P_c + Q_a Q_c) mu(2k+1) i_k(mu r_<) k_k(mu r_>) (P_b P_d + Q_b Q_d)
 
-        of rank k for the four orbitals a, b, c, d, and over the given grid by using an explicit 2-dimensional integration 
-        scheme; a value::Float64 is returned.
+        of rank k for the four orbitals a, b, c, d.  NOTE THAT `lambda` IS THE INVERSE DEBYE LENGTH mu = 1/lambda_D
+        and not the Debye length itself; the name is kept because the callers
+        (InteractionStrength.XL_Coulomb_DH, and through it Basics.compute(..., plasmaModel) and
+        AutoIonization.computeLinesPlasma) have always passed 1/plasmaModel.debyeLength here.
+        A value::Float64 is returned.
+
+        This is now a thin wrapper on RadialIntegrals.SlaterRkYukawa.  The earlier body summed the same Yukawa
+        multipole expansion but TRUNCATED IT AT THREE TERMS of the i_k power series (p = 0,1,2), which is
+        accurate only while mu r_< << 1 and silently loses the interaction once the Debye length approaches the
+        orbital radii -- the regime the function exists for -- and it did so through an explicit O(N_r^2) double
+        loop over the grid.  The replacement sums the expansion exactly and in O(N_r).
 """
-function SlaterRkDebyeHueckel(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Radial.Orbital, 
+function SlaterRkDebyeHueckel(k::Int64, a::Radial.Orbital, b::Radial.Orbital, c::Radial.Orbital, d::Radial.Orbital,
                                     grid::Radial.Grid, lambda::Float64)
-                
-    function ul_DH(L::Int64, s::Float64, r::Float64) 
-        # Calculates the ul_DH(r,s) function for  s <= r.
-        sum = 0.;   suma = 0.
-        for  p = 0:2
-            for q = 0:L
-                sum = sum + (2^(L-q)) * (lambda^(L+p+p-q)) *  factorial(L+q) * factorial(L+p) /
-                            ( factorial(L+L+p+p+1) * factorial(L-q) * factorial(p) * factorial(q)) * 
-                            (s^(L+p+p)) * exp(-lambda*r) / (r^(q+1))
-            end
-            if (p == 2) suma = sum   end
-        end
-        return( (L+L+1) * sum )
-    end                                 
 
-    function ul(r :: Float64, s :: Float64) :: Float64
-        if     r <= s    return( ul_DH(k, r, s) )
-        elseif r > s     return( ul_DH(k, s, r) )
-        end
-    end
-
-    
-    mtp_ac = min(size(a.P, 1), size(c.P, 1));    mtp_bd = min(size(b.P, 1), size(d.P, 1))
-    wa = 0.
-    for  r = 2:mtp_ac
-        for  s = 2:mtp_bd   wa = wa + (a.P[r] * c.P[r] + a.Q[r] * c.Q[r]) * ul(grid.r[r], grid.r[s]) * 
-                                        (b.P[s] * d.P[s] + b.Q[s] * d.Q[s]) * grid.wr[r] * grid.wr[s]   end
-    end
-    return( wa )
+    return( RadialIntegrals.SlaterRkYukawa(k, a, b, c, d, grid, lambda) )
 end
 
 """
-`RadialIntegrals.Vinti(a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)` 
+`RadialIntegrals.Vinti(a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)`
     ... computes the (radial) Vinti integral for the two radia integrals a and b:
-            
+
                                         [ d        kappa_a (kappa_a+1) - kappa_b (kappa_b+1) ]
         R^(Vinti) = int_0^infty dr  P_a [ --   -  ------------------------------------------ ] P_b    +  similar (not equal) in Q_a, Q_b
                                         [ dr                          2 r                    ]
-        
+
         a value::Float64 is returned.
 """
 function  Vinti(a::Radial.Orbital, b::Radial.Orbital, grid::Radial.Grid)
-    
+
     mtp_ab = min(size(a.P, 1), size(b.P, 1));    kapa = a.subshell.kappa;     kapb = b.subshell.kappa
     wa = 0.
     for  r = 2:mtp_ab
         wc = a.P[r] * b.Pprime[r] - a.P[r] * kapa * (kapa+1) * b.P[r] / (2grid.r[r])  + a.P[r] * kapb * (kapb+1) * b.P[r] / (2grid.r[r])
-        wd = a.Q[r] * b.Qprime[r] + a.Q[r] * kapa * (-kapa+1)* b.Q[r] / (2grid.r[r]) - a.Q[r] * kapb * (-kapb+1) * b.Q[r] / (2grid.r[r])                            
+        wd = a.Q[r] * b.Qprime[r] + a.Q[r] * kapa * (-kapa+1)* b.Q[r] / (2grid.r[r]) - a.Q[r] * kapb * (-kapb+1) * b.Q[r] / (2grid.r[r])
         wa = wa +  (wc + wd) * grid.wr[r]
     end
     return( wa )
 end
 
 """
-`RadialIntegrals.V0(wa::Array{Float64,1}, mtp::Int64, grid::Radial.Grid)` 
+`RadialIntegrals.V0(wa::Array{Float64,1}, mtp::Int64, grid::Radial.Grid)`
     ... computes the (radial) integral int_0^infty dr wa; a value::Float64 is returned.
 """
 function V0(wa::Array{Float64,1}, mtp::Int64, grid::Radial.Grid)
-    
+
     wb = 0.
     for  i = 1:mtp   wb = wb + wa[i] * grid.wr[i]   end
     return( wb )
 end
 
 """
-`RadialIntegrals.W5_Integral(mu::Int64, nu::Int64, a::Radial.Orbital, b::Radial.Orbital,  
-                                                    c::Radial.Orbital, d::Radial.Orbital, grid::Radial.Grid)`  
-    ... computes the (radial) integral for four relativistic orbitals: 
-                            
+`RadialIntegrals.W5_Integral(mu::Int64, nu::Int64, a::Radial.Orbital, b::Radial.Orbital,
+                                                    c::Radial.Orbital, d::Radial.Orbital, grid::Radial.Grid)`
+    ... computes the (radial) integral for four relativistic orbitals:
+
         W_5 [ac|bd] = int_0^infty dr   int_0^r ds   [Pa Qc]_{r}  * ( s^nu / r^(nu+1) ) * [Pb Qd]_{s}
 
         as it frequently occurs in the frequency-independent Breit interaction.
 """
-function W5_Integral(mu::Int64, nu::Int64, a::Radial.Orbital, b::Radial.Orbital,  
+function W5_Integral(mu::Int64, nu::Int64, a::Radial.Orbital, b::Radial.Orbital,
                                             c::Radial.Orbital, d::Radial.Orbital, grid::Radial.Grid)
     # Note mu = 5 is fixed historically and not used for this integral.
     !(mu == 5)   &&   error("mu = 5 required.")
     mtp = min(size(b.P, 1), size(d.P, 1))
-    
+
     mtp_ac = min(size(a.P, 1), size(c.P, 1));    mtp_bd = min(size(b.P, 1), size(d.P, 1))
     wa = 0.
     for  r = 2:mtp_ac
-        for  s = 2:mtp_bd   
-            if     s > r  continue  
-            elseif s ==r  wa = wa + (a.P[r] * c.Q[r]) * (grid.r[s]^nu) / (grid.r[r]^(nu+1)) * (b.P[s] * d.Q[s]) * grid.wr[r] * grid.wr[s] / 2.0   
+        for  s = 2:mtp_bd
+            if     s > r  continue
+            elseif s ==r  wa = wa + (a.P[r] * c.Q[r]) * (grid.r[s]^nu) / (grid.r[r]^(nu+1)) * (b.P[s] * d.Q[s]) * grid.wr[r] * grid.wr[s] / 2.0
             else          wa = wa + (a.P[r] * c.Q[r]) * (grid.r[s]^nu) / (grid.r[r]^(nu+1)) * (b.P[s] * d.Q[s]) * grid.wr[r] * grid.wr[s]
             end
         end
@@ -1148,7 +1440,7 @@ function W5_Integral(mu::Int64, nu::Int64, a::Radial.Orbital, b::Radial.Orbital,
 end
 
 """
-`RadialIntegrals.Yk_ab(k::Int64, r::Float64, rho_ab::Array{Float64,1}, mtp::Int64, grid::Radial.Grid)`  
+`RadialIntegrals.Yk_ab(k::Int64, r::Float64, rho_ab::Array{Float64,1}, mtp::Int64, grid::Radial.Grid)`
     ... computes the (radial) integral
 
                                             r<^k
@@ -1158,12 +1450,36 @@ end
         a value::Float64 is returned.
 """
 function Yk_ab(k::Int64, r::Float64, rho_ab::Array{Float64,1}, mtp::Int64, grid::Radial.Grid)
-    
+
     wa = 0.
-    for  i = 2:mtp   
+    for  i = 2:mtp
         rl = min(r, grid.r[i]);   rg = max(r, grid.r[i])
         wa = wa + rho_ab[i] * rl^k / rg^(k+1) * grid.wr[i]
     end
+    return( r * wa )
+end
+
+
+"""
+`RadialIntegrals.Yk_ab(k::Int64, r::Float64, rho_ab::Array{Float64,1}, mtp::Int64, grid::Radial.Grid, mu::Float64)`
+    ... computes the Debye-Hueckel-screened counterpart of RadialIntegrals.Yk_ab,
+
+        Y_ab^k (r) = r * int_0^infty dr'  mu (2k+1) i_k(mu r_<) k_k(mu r_>)  rho_ab(r'),
+
+        for the inverse Debye length mu = 1/lambda_D [a_o^-1].  mu = 0 reproduces the unscreened method exactly,
+        by taking the same code path.  This is the k = 0 quantity the Hartree-Slater mean field is built from
+        (Basics.computePotential(::HSField, ...)), which is why it exists as a method of its own rather than as a
+        keyword.  A value::Float64 is returned.
+"""
+function Yk_ab(k::Int64, r::Float64, rho_ab::Array{Float64,1}, mtp::Int64, grid::Radial.Grid, mu::Float64)
+    if  mu <= 0.    return( RadialIntegrals.Yk_ab(k, r, rho_ab, mtp, grid) )    end
+
+    wa = 0.
+    for  i = 2:mtp
+        rl = min(r, grid.r[i]);   rg = max(r, grid.r[i])
+        wa = wa + rho_ab[i] * RadialIntegrals.yukawaKernel(k, rl, rg, mu) * grid.wr[i]
+    end
+
     return( r * wa )
 end
 

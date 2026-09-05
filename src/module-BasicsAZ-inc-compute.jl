@@ -610,8 +610,22 @@ function Basics.computePotential(scField::Basics.CHField, grid::Radial.Grid, lev
         for    i = 1:nrho   rhoc[i] = rhoc[i] + occ * (orb.P[i]^2 + orb.Q[i]^2)    end
     end
     # Define the integrant and take the integrals
+    # THE SECOND, INDEPENDENT e-e COULOMB PATH.  This local potential is NOT built from the Slater machinery:
+    # it re-derives  int rho(r')/r_>  with its own double loop, and it is what the mean-field SCF
+    # (SelfConsistent.solveMeanFieldBasis) iterates the orbitals against.  Screening the Slater integrals alone
+    # would therefore leave the ORBITALS unscreened while the Hamiltonian built from them was screened.  The
+    # k = 0 Coulomb kernel 1/r_> is replaced here by the k = 0 Yukawa kernel mu i_0(mu r_<) k_0(mu r_>), with the
+    # same mu that reaches RadialIntegrals.buildScreenedPotential.  mu == 0.0 keeps the original line untouched.
+    mu = Defaults.eeScreeningMu()
     for i = 1:npoints
-        for j = 1:npoints    rg = max( grid.r[i],  grid.r[j]);    wx[j] = rhoc[j]/rg   end
+        if  mu == 0.
+            for j = 1:npoints    rg = max( grid.r[i],  grid.r[j]);    wx[j] = rhoc[j]/rg   end
+        else
+            for j = 1:npoints
+                rl = min( grid.r[i],  grid.r[j]);    rg = max( grid.r[i],  grid.r[j])
+                wx[j] = rhoc[j] * RadialIntegrals.yukawaKernel(0, rl, rg, mu)
+            end
+        end
         wb[i] = RadialIntegrals.V0(wx, npoints, grid::Radial.Grid)
     end
     # Define the potential with regard to Z(r)
@@ -635,14 +649,17 @@ end
 """
 function Basics.computePotential(scField::Basics.HSField, grid::Radial.Grid, level::Level)
     basis = level.basis;    npoints = grid.NoPoints;    wx = zeros( npoints );    rho = zeros( npoints )
+    # The k = 0 direct term of this mean field carries the e-e screening; see the note in
+    # Basics.computePotential(::Basics.CHField, ...).  mu = 0 selects the unscreened RadialIntegrals.Yk_ab.
+    mu = Defaults.eeScreeningMu()
     # Sum_a ...
     for  a in basis.subshells
         occa = Basics.computeMeanSubshellOccupation(a, [level])
         orba = basis.orbitals[a];   nrho = length(orba.P);      rhoaa  = zeros(nrho)
         for  i = 1:nrho    rhoaa[i] = orba.P[i]^2 + orba.Q[i]^2    end
-        for  i = 1:nrho    wx[i]    = wx[i]  - occa * RadialIntegrals.Yk_ab(0, grid.r[i], rhoaa, nrho, grid)   end
+        for  i = 1:nrho    wx[i]    = wx[i]  - occa * RadialIntegrals.Yk_ab(0, grid.r[i], rhoaa, nrho, grid, mu)   end
         for  i = 1:nrho    rho[i]   = rho[i] + occa * rhoaa[i]     end
-        Yk = RadialIntegrals.Yk_ab(0, grid.r[nrho], rhoaa, nrho, grid)
+        Yk = RadialIntegrals.Yk_ab(0, grid.r[nrho], rhoaa, nrho, grid, mu)
         for  i = nrho+1:npoints       wx[i] = wx[i] - occa * Yk    end
     end
     ## for  i = 2:npoints     rho[i]   = rho[i] / (4pi * grid.r[i])   end;       rho[1] = 0.
@@ -675,8 +692,22 @@ function Basics.computePotential(scField::Basics.KSField, grid::Radial.Grid, lev
         for    i = 1:nrho   rhot[i] = rhot[i] + occ * (orb.P[i]^2 + orb.Q[i]^2)    end
     end
     # Define the integrant and take the integrals (without alpha)
+    # THE SECOND, INDEPENDENT e-e COULOMB PATH.  This local potential is NOT built from the Slater machinery:
+    # it re-derives  int rho(r')/r_>  with its own double loop, and it is what the mean-field SCF
+    # (SelfConsistent.solveMeanFieldBasis) iterates the orbitals against.  Screening the Slater integrals alone
+    # would therefore leave the ORBITALS unscreened while the Hamiltonian built from them was screened.  The
+    # k = 0 Coulomb kernel 1/r_> is replaced here by the k = 0 Yukawa kernel mu i_0(mu r_<) k_0(mu r_>), with the
+    # same mu that reaches RadialIntegrals.buildScreenedPotential.  mu == 0.0 keeps the original line untouched.
+    mu = Defaults.eeScreeningMu()
     for i = 1:npoints
-        for j = 1:npoints    rg = max( grid.r[i],  grid.r[j]);    wx[j] = rhot[j]/rg   end
+        if  mu == 0.
+            for j = 1:npoints    rg = max( grid.r[i],  grid.r[j]);    wx[j] = rhot[j]/rg   end
+        else
+            for j = 1:npoints
+                rl = min( grid.r[i],  grid.r[j]);    rg = max( grid.r[i],  grid.r[j])
+                wx[j] = rhot[j] * RadialIntegrals.yukawaKernel(0, rl, rg, mu)
+            end
+        end
         wb[i] = RadialIntegrals.V0(wx, npoints, grid::Radial.Grid)
         wb[i] = wb[i] - 2 / (3grid.r[i]) * (81 /(32 * pi^2) * grid.r[i] * rhot[i])^(1/3)
     end
@@ -760,8 +791,22 @@ function Basics.computePotential(scField::Basics.DFSField, grid::Radial.Grid, le
     # Define the integrant and take the integrals
     ## println(">>>>> wy = $(scField.strength) * DFS potential");     
     wy = scField.strength
+    # THE SECOND, INDEPENDENT e-e COULOMB PATH.  This local potential is NOT built from the Slater machinery:
+    # it re-derives  int rho(r')/r_>  with its own double loop, and it is what the mean-field SCF
+    # (SelfConsistent.solveMeanFieldBasis) iterates the orbitals against.  Screening the Slater integrals alone
+    # would therefore leave the ORBITALS unscreened while the Hamiltonian built from them was screened.  The
+    # k = 0 Coulomb kernel 1/r_> is replaced here by the k = 0 Yukawa kernel mu i_0(mu r_<) k_0(mu r_>), with the
+    # same mu that reaches RadialIntegrals.buildScreenedPotential.  mu == 0.0 keeps the original line untouched.
+    mu = Defaults.eeScreeningMu()
     for i = 1:npoints
-        for j = 1:npoints    rg = max( grid.r[i],  grid.r[j]);    wx[j] = rhot[j]/rg   end
+        if  mu == 0.
+            for j = 1:npoints    rg = max( grid.r[i],  grid.r[j]);    wx[j] = rhot[j]/rg   end
+        else
+            for j = 1:npoints
+                rl = min( grid.r[i],  grid.r[j]);    rg = max( grid.r[i],  grid.r[j])
+                wx[j] = rhot[j] * RadialIntegrals.yukawaKernel(0, rl, rg, mu)
+            end
+        end
         wb[i] = RadialIntegrals.V0(wx, npoints, grid::Radial.Grid)
         wb[i] = wb[i] - (3 /(4*pi^2 * grid.r[i]^2) * rhot[i])^(1/3) * wy
     end
@@ -788,8 +833,22 @@ function Basics.computePotential(scField::Basics.DFSField, grid::Radial.Grid, ba
         for    i = 1:nrho   rhot[i] = rhot[i] + occ * (orb.P[i]^2 + orb.Q[i]^2)    end
     end
     # Define the integrant and take the integrals
+    # THE SECOND, INDEPENDENT e-e COULOMB PATH.  This local potential is NOT built from the Slater machinery:
+    # it re-derives  int rho(r')/r_>  with its own double loop, and it is what the mean-field SCF
+    # (SelfConsistent.solveMeanFieldBasis) iterates the orbitals against.  Screening the Slater integrals alone
+    # would therefore leave the ORBITALS unscreened while the Hamiltonian built from them was screened.  The
+    # k = 0 Coulomb kernel 1/r_> is replaced here by the k = 0 Yukawa kernel mu i_0(mu r_<) k_0(mu r_>), with the
+    # same mu that reaches RadialIntegrals.buildScreenedPotential.  mu == 0.0 keeps the original line untouched.
+    mu = Defaults.eeScreeningMu()
     for i = 1:npoints
-        for j = 1:npoints    rg = max( grid.r[i],  grid.r[j]);    wx[j] = rhot[j]/rg   end
+        if  mu == 0.
+            for j = 1:npoints    rg = max( grid.r[i],  grid.r[j]);    wx[j] = rhot[j]/rg   end
+        else
+            for j = 1:npoints
+                rl = min( grid.r[i],  grid.r[j]);    rg = max( grid.r[i],  grid.r[j])
+                wx[j] = rhot[j] * RadialIntegrals.yukawaKernel(0, rl, rg, mu)
+            end
+        end
         wb[i] = RadialIntegrals.V0(wx, npoints, grid::Radial.Grid)
         wb[i] = wb[i] - (3 /(4*pi^2 * grid.r[i]^2) * rhot[i])^(1/3)
     end

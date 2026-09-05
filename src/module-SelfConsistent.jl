@@ -325,6 +325,62 @@ end
 
 
 """
+`SelfConsistent.checkEeScreeningIsConsistent(settings::AsfSettings; printout::Bool=true)`
+    ... checks that the requested combination of self-consistent field and e-e interaction can be carried
+        through CONSISTENTLY under the e-e screening currently selected by
+        Defaults.setDefaults("e-e screening", ...), and raises a naming error if it cannot.  Nothing is returned.
+
+        THE POINT IS THAT A PARTLY SCREENED CALCULATION LOOKS LIKE A SCREENED ONE.  It runs, it converges and it
+        returns plausible energies, and nothing in the output says that half the interaction was left
+        unscreened; so where the screening cannot reach, this refuses rather than answers.  Two such places
+        exist today:
+
+        * ALField and EOLField optimise the orbitals through the B-spline tensor line
+          (RadialIntegrals.buildScreenedPotentialPair / buildScreenedPotentialCache ->
+          InteractionStrength.XL_CoulombTensor), which is a SEPARATE construction from the tabulated-orbital
+          sweep RadialIntegrals.buildScreenedPotential that the screening switch reaches.  Their SCF would
+          therefore run on the bare Coulomb interaction while the final CI matrix was screened.  DFSField (the
+          default), HSField, KSField and CHField all drive the mean-field iteration, whose direct potential IS
+          screened, and are supported.
+        * The Breit and Gaunt operators are the transverse photon-exchange part of the e-e interaction and have
+          their own kernels (InteractionStrength.XL_Breit), which this work does not touch; a Debye-screened
+          Coulomb term beside an unscreened Breit term is not a defined approximation.
+"""
+function checkEeScreeningIsConsistent(settings::AsfSettings; printout::Bool=true)
+    mu = Defaults.eeScreeningMu()
+    mu == 0.   &&   return( nothing )
+    ## SAY SO IN THE RUN'S OWN OUTPUT.  The screening is a session global and is off by default, so without
+    ## this line a screened .sum or console log is indistinguishable from an unscreened one -- and a reader
+    ## coming back to a number months later has nothing in the record to tell them which it was.  That is the
+    ## same "silently wrong" failure the refusals below exist to prevent, one step further downstream.
+    if  printout
+        println("> Debye-Hueckel e-e screening is IN FORCE for this calculation:  lambda_D = $(1/mu) a_o, " *
+                "mu = $mu a_o^-1.\n>   1/r_12 -> exp(-mu r_12)/r_12 in the Slater integrals AND in the "    *
+                "direct SCF potential; the electron-nucleus potential is unchanged.")
+    end
+
+    if  typeof(settings.scField) in [Basics.ALField, Basics.EOLField]
+        error("\n\nSelfConsistent.performSCF(): e-e screening is in force, but $(nameof(typeof(settings.scField))) " *
+              "optimises its orbitals\n    through the B-spline tensor line, which this screening does NOT reach -- "  *
+              "the SCF would run unscreened while the\n    Hamiltonian built from it was screened.  Use "             *
+              "scField = Basics.DFSField() (the default), HSField(), KSField() or\n    CHField(), or switch the "     *
+              "screening off with Defaults.setDefaults(\"e-e screening\", Basics.NoPlasmaModel()).\n")
+    end
+    for  (name, kind) in [("eeInteraction", settings.eeInteraction), ("eeInteractionCI", settings.eeInteractionCI)]
+        if  typeof(kind) in [BreitInteraction, CoulombBreit, CoulombGaunt]
+            error("\n\nSelfConsistent.performSCF(): e-e screening is in force, but $name = $(typeof(kind)) asks "  *
+                  "for the transverse\n    (Breit/Gaunt) part of the e-e interaction, whose kernels are NOT "        *
+                  "screened.  A Debye-screened Coulomb term\n    beside an unscreened Breit term is not a defined "  *
+                  "approximation, so use CoulombInteraction() while screening,\n    or switch the screening off "    *
+                  "with Defaults.setDefaults(\"e-e screening\", Basics.NoPlasmaModel()).\n")
+        end
+    end
+
+    return( nothing )
+end
+
+
+"""
 `SelfConsistent.performSCF(configs::Array{Configuration,1}, nm::Nuclear.Model,
                            settings::AsfSettings; levelSymmetries::Array{LevelSymmetry,1}=LevelSymmetry[], printout::Bool=true)`
     ... performs a SCF computation for which NO grid is given, so that the radial box is derived from the
@@ -364,6 +420,7 @@ function performSCF(configs::Array{Configuration,1}, nm::Nuclear.Model, grid::Ra
                     settings::AsfSettings; levelSymmetries::Array{LevelSymmetry,1}=LevelSymmetry[], printout::Bool=true)
     
     SelfConsistent.checkScFieldIsSupported(settings.scField)
+    SelfConsistent.checkEeScreeningIsConsistent(settings; printout=printout)
     # A system with ONE electron has no electron-electron interaction to average, so every self-consistent field
     # degenerates to the bare nuclear one -- except that a mean field built from the density would include this
     # electron's own charge and repel it from itself. The substitution is therefore not a fallback or a guess: it
@@ -451,6 +508,7 @@ function performSCF(basis::Basis, nm::Nuclear.Model, grid::Radial.Grid,
                     settings::AsfSettings; levelSymmetries::Array{LevelSymmetry,1}=LevelSymmetry[], printout::Bool=false)
     
     SelfConsistent.checkScFieldIsSupported(settings.scField)
+    SelfConsistent.checkEeScreeningIsConsistent(settings; printout=printout)
 
     # Generate primitives
     primitives = Bsplines.generatePrimitives(grid)    

@@ -1240,7 +1240,12 @@ end
         than a global.
 """
 function XL_Coulomb(L::Int64, a::Orbital, b::Orbital, c::Orbital, d::Orbital, grid::Radial.Grid, cache::XLCache)
-    key = (:Coulomb, L, a.subshell, b.subshell, c.subshell, d.subshell, 0., :direct)
+    ## CACHE AUDIT.  The Float64 slot of the key carries the e-e SCREENING parameter mu, not a constant 0.
+    ## Without it a value computed under one screening model would be handed back under another -- a cache is
+    ## shared by every CSF pair of one matrix, and Defaults.setDefaults("e-e screening", ...) can be changed
+    ## between two matrices in one session (a plasma-shift run does exactly that: field-free first, screened
+    ## second).  mu is 0.0 when no screening is in force, which reproduces the former key exactly.
+    key = (:Coulomb, L, a.subshell, b.subshell, c.subshell, d.subshell, Defaults.eeScreeningMu(), :direct)
     haskey(cache.values, key)   &&   return( cache.values[key] )
     value = InteractionStrength.XL_Coulomb(L, a, b, c, d, grid)
     cache.values[key] = value
@@ -1550,7 +1555,12 @@ end
 """
 function XL_CoulombKinkAware(L::Int64, a::Orbital, b::Orbital, c::Orbital, d::Orbital, grid::Radial.Grid,
                               cache::XLCache)
-    key = (:CoulombKinkAware, L, a.subshell, b.subshell, c.subshell, d.subshell, 0., :direct)
+    ## CACHE AUDIT.  The Float64 slot of the key carries the e-e SCREENING parameter mu, not a constant 0.
+    ## Without it a value computed under one screening model would be handed back under another -- a cache is
+    ## shared by every CSF pair of one matrix, and Defaults.setDefaults("e-e screening", ...) can be changed
+    ## between two matrices in one session (a plasma-shift run does exactly that: field-free first, screened
+    ## second).  mu is 0.0 when no screening is in force, which reproduces the former key exactly.
+    key = (:CoulombKinkAware, L, a.subshell, b.subshell, c.subshell, d.subshell, Defaults.eeScreeningMu(), :direct)
     haskey(cache.values, key)   &&   return( cache.values[key] )
     value = InteractionStrength.XL_CoulombKinkAware(L, a, b, c, d, grid)
     cache.values[key] = value

@@ -155,6 +155,10 @@ end
     end
 
     @testset "JAC plasma" begin
+        @test TestFrames.testModule_PlasmaScreening()   ## added 05-Sep-2026 with the Debye-Hueckel e-e screening;
+                                                        ## closed forms, the mu -> 0 limit, a bit-identical round
+                                                        ## trip of the switch and one self-consistent He run, so
+                                                        ## none of it can pass on a stale stored reference
     end
 
     @testset "JAC strongfield" begin
